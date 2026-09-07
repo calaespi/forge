@@ -5022,7 +5022,7 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
 
     public final void updateKeywords() {
         getCurrentState().getView().updateKeywords(this, getCurrentState());
-        // for Zilortha
+        // Keywords (and P/T from them) can affect displayed lethal damage
         getView().updateLethalDamage(this);
     }
 
@@ -6871,13 +6871,7 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
     }
 
     public final boolean canBeControlledBy(final Player newController) {
-        if (!newController.isInGame()) {
-            return false;
-        }
-        if (getController().equals(newController)) {
-            return true;
-        }
-        return !StaticAbilityCantGainControl.cantGainControl(this);
+        return newController.isInGame() && !(StaticAbilityCantGainControl.cantGainControl(this) && !getController().equals(newController));
     }
 
     @Override
@@ -7916,10 +7910,14 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
     }
 
     public void addLethalDamageByPower(long timestamp) {
-        lethalDamageByPower.add(timestamp);
+        if (lethalDamageByPower.add(timestamp)) {
+            getView().updateLethalDamage(this);
+        }
     }
     public void removeLethalDamageByPower(long timestamp) {
-        lethalDamageByPower.remove(timestamp);
+        if (lethalDamageByPower.remove(timestamp)) {
+            getView().updateLethalDamage(this);
+        }
     }
     public boolean isLethalDamageByPower() {
         return !lethalDamageByPower.isEmpty();
