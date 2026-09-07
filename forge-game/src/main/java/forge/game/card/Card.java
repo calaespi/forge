@@ -179,6 +179,7 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
 
     private final Map<Long, Integer> canBlockAdditional = Maps.newTreeMap();
     private final Set<Long> canBlockAny = Sets.newHashSet();
+    private final Set<Long> lethalDamageByPower = Sets.newHashSet();
 
     // changes that say "replace each instance of one [color,type] by another - timestamp is the key of maps
     private final CardChangedWords changedTextColors = new CardChangedWords();
@@ -6006,7 +6007,7 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
 
     // this is the amount of damage a creature needs to receive before it dies
     public final int getLethal() {
-        if (hasKeyword("Lethal damage dealt to CARDNAME is determined by its power rather than its toughness.")) {
+        if (isLethalDamageByPower()) {
             return getNetPower();
         }
         return getNetToughness();
@@ -6870,7 +6871,13 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
     }
 
     public final boolean canBeControlledBy(final Player newController) {
-        return newController.isInGame() && !(hasKeyword("Other players can't gain control of CARDNAME.") && !getController().equals(newController));
+        if (!newController.isInGame()) {
+            return false;
+        }
+        if (getController().equals(newController)) {
+            return true;
+        }
+        return !StaticAbilityCantGainControl.cantGainControl(this);
     }
 
     @Override
@@ -7906,6 +7913,16 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
     }
     public boolean canBlockAny() {
         return !canBlockAny.isEmpty();
+    }
+
+    public void addLethalDamageByPower(long timestamp) {
+        lethalDamageByPower.add(timestamp);
+    }
+    public void removeLethalDamageByPower(long timestamp) {
+        lethalDamageByPower.remove(timestamp);
+    }
+    public boolean isLethalDamageByPower() {
+        return !lethalDamageByPower.isEmpty();
     }
 
     public boolean removeChangedState() {
